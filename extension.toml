@@ -1,7 +1,7 @@
 id = "wordpress"
 name = "WordPress"
 description = "WordPress and WooCommerce support for PHP: pre-configured Intelephense with WP/WooCommerce/ACF/Genesis/Polylang stubs and WPCS diagnostics via efm-langserver."
-version = "0.2.0"
+version = "0.2.1"
 schema_version = 1
 authors = ["Zdravko Curic <zcuric@gmail.com>"]
 repository = "https://github.com/zcuric/zed-wordpress"

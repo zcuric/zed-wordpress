@@ -182,9 +182,10 @@ correctly for stdin-based formatters.
 ## Versioning
 
 - **0.1.0** — pre-configured Intelephense for WordPress.
-- **0.2.0** *(current)* — WPCS via `efm-langserver`, prettier completion
-  labels, automatic Intelephense install via `npm` when missing from
-  `PATH`.
+- **0.2.0** — WPCS via `efm-langserver`, prettier completion labels,
+  automatic Intelephense install via `npm` when missing from `PATH`.
+- **0.2.1** *(current)* — adds the LICENSE file required by the Zed
+  extension registry. No code or behavior changes.
 
 ## License
 
