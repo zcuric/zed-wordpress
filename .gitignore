@@ -1,0 +1,10 @@
+target/
+Cargo.lock
+*.wasm
+dist/
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

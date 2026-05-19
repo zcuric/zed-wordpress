@@ -1,0 +1,17 @@
+id = "wordpress"
+name = "WordPress"
+description = "WordPress and WooCommerce support for PHP: pre-configured Intelephense with WP/WooCommerce/ACF/Genesis/Polylang stubs and WPCS diagnostics via efm-langserver."
+version = "0.2.0"
+schema_version = 1
+authors = ["Zdravko Curic <zcuric@gmail.com>"]
+repository = "https://github.com/zcuric/zed-wordpress"
+
+[language_servers.wp-intelephense]
+name = "WP Intelephense"
+language = "PHP"
+language_ids = { PHP = "php" }
+
+[language_servers.wpcs]
+name = "WPCS"
+language = "PHP"
+language_ids = { PHP = "php" }
