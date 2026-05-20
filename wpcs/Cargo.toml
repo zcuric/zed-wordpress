@@ -1,12 +1,12 @@
 [package]
-name = "zed_wordpress"
-version = "0.2.1"
+name = "wordpress_coding_standards"
+version = "0.1.0"
 edition = "2021"
 publish = false
 license = "Apache-2.0"
 
 [lib]
-path = "src/wordpress.rs"
+path = "src/wpcs.rs"
 crate-type = ["cdylib"]
 
 [dependencies]

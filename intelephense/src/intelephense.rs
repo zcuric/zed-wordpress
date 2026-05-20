@@ -5,13 +5,10 @@ use zed_extension_api::{
     self as zed, serde_json, CodeLabel, CodeLabelSpan, LanguageServerId, Result,
 };
 
-const INTELEPHENSE_LS_ID: &str = "wp-intelephense";
-const WPCS_LS_ID: &str = "wpcs";
+const LANGUAGE_SERVER_ID: &str = "wp-intelephense";
 
 const NPM_PACKAGE: &str = "intelephense";
 const NPM_SERVER_PATH: &str = "node_modules/intelephense/lib/intelephense.js";
-
-const EFM_PROJECT_CONFIG: &str = ".zed/efm-wp.yaml";
 
 const DEFAULT_STUBS: &[&str] = &[
     // PHP core extensions (mirrors bitpoke/wordpress.nvim).
@@ -96,12 +93,12 @@ const DEFAULT_STUBS: &[&str] = &[
     "polylang",
 ];
 
-struct WordPressExtension {
-    intelephense_installed: bool,
+struct WordPressIntelephenseExtension {
+    installed: bool,
 }
 
-impl WordPressExtension {
-    fn intelephense_command(
+impl WordPressIntelephenseExtension {
+    fn command(
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
@@ -114,7 +111,7 @@ impl WordPressExtension {
             });
         }
 
-        let server_path = self.ensure_intelephense_installed(language_server_id)?;
+        let server_path = self.ensure_installed(language_server_id)?;
         Ok(zed::Command {
             command: zed::node_binary_path()?,
             args: vec![
@@ -129,13 +126,10 @@ impl WordPressExtension {
         })
     }
 
-    fn ensure_intelephense_installed(
-        &mut self,
-        language_server_id: &LanguageServerId,
-    ) -> Result<String> {
+    fn ensure_installed(&mut self, language_server_id: &LanguageServerId) -> Result<String> {
         let server_exists = fs::metadata(NPM_SERVER_PATH).is_ok_and(|stat| stat.is_file());
 
-        if self.intelephense_installed && server_exists {
+        if self.installed && server_exists {
             return Ok(NPM_SERVER_PATH.to_string());
         }
 
@@ -168,35 +162,12 @@ impl WordPressExtension {
             }
         }
 
-        self.intelephense_installed = true;
+        self.installed = true;
         Ok(NPM_SERVER_PATH.to_string())
-    }
-
-    fn wpcs_command(&self, worktree: &zed::Worktree) -> Result<zed::Command> {
-        let efm = worktree.which("efm-langserver").ok_or_else(|| {
-            "`efm-langserver` was not found on PATH. Install it (Go): \
-             `go install github.com/mattn/efm-langserver@latest`, then drop the \
-             WPCS config from the zed-wordpress README into \
-             `~/.config/efm-langserver/config.yaml`."
-                .to_string()
-        })?;
-
-        let mut args = Vec::new();
-        let project_config = format!("{}/{}", worktree.root_path(), EFM_PROJECT_CONFIG);
-        if fs::metadata(&project_config).is_ok_and(|stat| stat.is_file()) {
-            args.push("-c".to_string());
-            args.push(project_config);
-        }
-
-        Ok(zed::Command {
-            command: efm,
-            args,
-            env: Default::default(),
-        })
     }
 }
 
-fn intelephense_default_settings() -> serde_json::Value {
+fn default_settings() -> serde_json::Value {
     serde_json::json!({
         "stubs": DEFAULT_STUBS,
         "files": {
@@ -221,7 +192,7 @@ fn deep_merge(base: &mut serde_json::Value, overlay: serde_json::Value) {
 
 /// Format Intelephense completion items more usefully — method signatures,
 /// property types, dimmed system variables. Lifted from `zed-extensions/php`.
-fn label_for_intelephense_completion(completion: zed::lsp::Completion) -> Option<CodeLabel> {
+fn label_for_completion(completion: zed::lsp::Completion) -> Option<CodeLabel> {
     let label = &completion.label;
     let kind = completion.kind?;
 
@@ -318,11 +289,9 @@ fn label_for_intelephense_completion(completion: zed::lsp::Completion) -> Option
     }
 }
 
-impl zed::Extension for WordPressExtension {
+impl zed::Extension for WordPressIntelephenseExtension {
     fn new() -> Self {
-        Self {
-            intelephense_installed: false,
-        }
+        Self { installed: false }
     }
 
     fn language_server_command(
@@ -331,8 +300,7 @@ impl zed::Extension for WordPressExtension {
         worktree: &zed::Worktree,
     ) -> Result<zed::Command> {
         match language_server_id.as_ref() {
-            INTELEPHENSE_LS_ID => self.intelephense_command(language_server_id, worktree),
-            WPCS_LS_ID => self.wpcs_command(worktree),
+            LANGUAGE_SERVER_ID => self.command(language_server_id, worktree),
             id => Err(format!("unknown language server: {id}")),
         }
     }
@@ -342,12 +310,11 @@ impl zed::Extension for WordPressExtension {
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<Option<serde_json::Value>> {
-        // Only Intelephense uses init options (e.g. `licenceKey`).
-        if language_server_id.as_ref() != INTELEPHENSE_LS_ID {
+        if language_server_id.as_ref() != LANGUAGE_SERVER_ID {
             return Ok(None);
         }
 
-        let init_options = LspSettings::for_worktree(INTELEPHENSE_LS_ID, worktree)
+        let init_options = LspSettings::for_worktree(LANGUAGE_SERVER_ID, worktree)
             .ok()
             .and_then(|settings| settings.initialization_options);
 
@@ -359,12 +326,12 @@ impl zed::Extension for WordPressExtension {
         language_server_id: &LanguageServerId,
         worktree: &zed::Worktree,
     ) -> Result<Option<serde_json::Value>> {
-        if language_server_id.as_ref() != INTELEPHENSE_LS_ID {
+        if language_server_id.as_ref() != LANGUAGE_SERVER_ID {
             return Ok(None);
         }
 
-        let mut intelephense = intelephense_default_settings();
-        if let Ok(settings) = LspSettings::for_worktree(INTELEPHENSE_LS_ID, worktree) {
+        let mut intelephense = default_settings();
+        if let Ok(settings) = LspSettings::for_worktree(LANGUAGE_SERVER_ID, worktree) {
             if let Some(user) = settings.settings {
                 deep_merge(&mut intelephense, user);
             }
@@ -378,12 +345,12 @@ impl zed::Extension for WordPressExtension {
         language_server_id: &LanguageServerId,
         completion: zed::lsp::Completion,
     ) -> Option<CodeLabel> {
-        if language_server_id.as_ref() == INTELEPHENSE_LS_ID {
-            label_for_intelephense_completion(completion)
+        if language_server_id.as_ref() == LANGUAGE_SERVER_ID {
+            label_for_completion(completion)
         } else {
             None
         }
     }
 }
 
-zed::register_extension!(WordPressExtension);
+zed::register_extension!(WordPressIntelephenseExtension);

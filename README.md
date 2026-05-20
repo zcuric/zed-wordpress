@@ -1,35 +1,40 @@
 # zed-wordpress
 
-A [Zed](https://zed.dev) extension that turns the editor into a proper
-WordPress / WooCommerce development environment.
+WordPress / WooCommerce tooling for the [Zed](https://zed.dev) editor,
+delivered as **two independent extensions** — install whichever you want:
 
-It registers two PHP language servers, ready to use:
-
-- **`wp-intelephense`** — Intelephense, pre-configured with WordPress,
-  WordPress-Globals, WP-CLI, WooCommerce, ACF Pro, Genesis, and Polylang
-  stubs, plus `files.maxSize` bumped to 5 MB so generated and plugin files
-  actually get indexed. Auto-installs the Intelephense package via `npm` if
-  it isn't already on your `PATH`. Completion labels are formatted with
-  parameter and return-type hints (lifted from the upstream
-  `zed-extensions/php` PHP extension).
-- **`wpcs`** — a thin wrapper around
-  [`efm-langserver`](https://github.com/mattn/efm-langserver) that surfaces
-  [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards)
+- **WordPress Intelephense** (`wordpress-intelephense`) — the Intelephense
+  PHP language server, pre-configured with WordPress, WordPress-Globals,
+  WP-CLI, WooCommerce, ACF Pro, Genesis, and Polylang stubs, plus
+  `files.maxSize` raised to 5 MB. Completion labels are formatted with
+  parameter and return-type hints. Auto-installs Intelephense from `npm` if
+  it isn't already on your `PATH`.
+- **WordPress Coding Standards** (`wordpress-coding-standards`) — a thin
+  wrapper around [`efm-langserver`](https://github.com/mattn/efm-langserver)
+  that surfaces [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards)
   diagnostics from `phpcs` as live LSP warnings.
 
-Inspired by
+Both register language servers against the `PHP` language from Zed's
+built-in PHP extension. Inspired by
 [`bitpoke/wordpress.nvim`](https://github.com/bitpoke/wordpress.nvim).
 
-## Install the extension
+This repository contains both extensions as subdirectories
+(`intelephense/` and `wpcs/`); each is published to the Zed registry
+separately.
 
-Once published to the Zed extension registry: Command Palette →
-`zed: extensions` → search **WordPress**.
+---
 
-## Activate the servers
+## WordPress Intelephense
 
-Add this to your Zed `settings.json` (global) or, recommended, to a
-per-project `.zed/settings.json` so non-WordPress PHP projects keep their
-defaults:
+### Install
+
+Command Palette → `zed: extensions` → search **WordPress Intelephense**.
+
+### Activate
+
+Add to your Zed `settings.json` (global) or a per-project
+`.zed/settings.json` (recommended — keeps non-WordPress PHP projects on
+their defaults):
 
 ```json
 {
@@ -37,7 +42,6 @@ defaults:
     "PHP": {
       "language_servers": [
         "wp-intelephense",
-        "wpcs",
         "!intelephense",
         "!phpactor",
         "!phptools",
@@ -48,24 +52,22 @@ defaults:
 }
 ```
 
-- `wp-intelephense` — completion, hover, go-to-definition.
-- `wpcs` — phpcs/WPCS diagnostics. Drop it from the list if you don't want
-  it.
-- `!intelephense`, `!phpactor`, `!phptools` — disable the other PHP servers
-  that ship with the built-in PHP extension. Leaving them on means you'll
-  get duplicate or conflicting diagnostics (e.g. `phpactor` flagging
-  `locate_template` as `worse.unresolved_name` because it doesn't know
-  about Intelephense's stubs).
+`!intelephense`, `!phpactor`, `!phptools` disable the other PHP servers
+from the built-in PHP extension. Leaving them on means duplicate or
+conflicting diagnostics — e.g. `phpactor` flagging `locate_template` as
+`worse.unresolved_name` because it doesn't read Intelephense's stubs.
 
-## Configuring `wp-intelephense`
+### Requirements
 
-Intelephense isn't bundled (extensions can't ship binaries). If you already
-have it on `PATH` it's used as-is; if not, the extension installs the npm
+Intelephense isn't bundled (extensions can't ship binaries). If it's on
+your `PATH` it's used as-is; otherwise the extension installs the npm
 package on first launch.
 
-To extend or override the defaults, add `lsp.wp-intelephense` to your
-settings. The contents under `settings` deep-merge on top of the extension's
-defaults and are forwarded to Intelephense:
+### Configuration
+
+Override or extend the defaults under `lsp.wp-intelephense`. Anything under
+`settings` deep-merges on top of the extension's defaults and is forwarded
+to Intelephense:
 
 ```json
 {
@@ -84,30 +86,44 @@ defaults and are forwarded to Intelephense:
 }
 ```
 
-Notes:
-
 - `settings.stubs`, if provided, **replaces** the default stubs list — copy
   the defaults if you want to extend rather than replace.
-- `initialization_options.licenceKey` is the standard place for paid
-  Intelephense licence keys; it's passed straight through to the server.
+- `initialization_options.licenceKey` is passed straight through for paid
+  Intelephense licences.
 
 ### Default stubs
 
 PHP core extensions (`apache`, `bcmath`, `Core`, `curl`, `date`, `mbstring`,
 `mysqli`, `PDO`, `pcre`, `Reflection`, `SPL`, `standard`, `superglobals`, …)
-plus:
+plus `wordpress`, `wordpress-globals`, `wp-cli`, `woocommerce`, `acf-pro`,
+`genesis`, and `polylang` — all real
+[`php-stubs/*`](https://github.com/php-stubs) packages bundled with
+Intelephense.
 
-- `wordpress`, `wordpress-globals`, `wp-cli`
-- `woocommerce`
-- `acf-pro`
-- `genesis`
-- `polylang`
+---
 
-These match real
-[`php-stubs/*`](https://github.com/php-stubs) packages, which Intelephense
-ships with.
+## WordPress Coding Standards
 
-## Configuring `wpcs`
+### Install
+
+Command Palette → `zed: extensions` → search **WordPress Coding
+Standards**.
+
+### Activate
+
+Add `wpcs` to the PHP `language_servers` list:
+
+```json
+{
+  "languages": {
+    "PHP": {
+      "language_servers": ["wp-intelephense", "wpcs", "..."]
+    }
+  }
+}
+```
+
+### Requirements
 
 Three one-time steps on your machine:
 
@@ -126,8 +142,8 @@ Three one-time steps on your machine:
    phpcs -i   # should list "WordPress"
    ```
 
-3. **Drop the WPCS config into `efm-langserver`.** Either as a global default
-   at `~/.config/efm-langserver/config.yaml`:
+3. **Give `efm-langserver` the WPCS config.** Either globally at
+   `~/.config/efm-langserver/config.yaml`:
 
    ```yaml
    version: 2
@@ -147,15 +163,14 @@ Three one-time steps on your machine:
    ```
 
    Or as a project-local override at `<project>/.zed/efm-wp.yaml` — the
-   extension picks it up automatically and passes `-c <path>` to
-   `efm-langserver`. Useful for switching standards (e.g. `WordPress-Core`
-   vs full `WordPress`) without touching your global config.
+   extension detects it and passes `-c <path>` to `efm-langserver`. Handy
+   for switching standards (`WordPress-Core` vs full `WordPress`) per
+   project without touching your global config.
 
-If `efm-langserver` isn't on `PATH`, the `wpcs` server will fail to start
-with a clear message — leave `wpcs` out of `language_servers` to skip the
-WPCS layer entirely.
+If `efm-langserver` isn't on `PATH`, the `wpcs` server fails to start with
+a clear message.
 
-## Formatting with phpcbf (optional, external)
+### Formatting with phpcbf (optional, external)
 
 `wpcs` reports diagnostics; for auto-fixing on save, configure `phpcbf` as
 an external formatter:
@@ -176,16 +191,7 @@ an external formatter:
 }
 ```
 
-`phpcbf` exits with code 1 on successful changes; Zed handles that
-correctly for stdin-based formatters.
-
-## Versioning
-
-- **0.1.0** — pre-configured Intelephense for WordPress.
-- **0.2.0** — WPCS via `efm-langserver`, prettier completion labels,
-  automatic Intelephense install via `npm` when missing from `PATH`.
-- **0.2.1** *(current)* — adds the LICENSE file required by the Zed
-  extension registry. No code or behavior changes.
+---
 
 ## License
 
